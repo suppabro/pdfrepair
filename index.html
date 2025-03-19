@@ -3,62 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fill PDF Form</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <title>Fill Repair Form</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.16.0/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/file-saver/2.0.5/FileSaver.min.js"></script>
     <style>
-        #pdf-container { position: relative; width: 100%; text-align: center; }
-        canvas { border: 1px solid black; }
-        .text-input { position: absolute; background: rgba(255,255,255,0.5); border: 1px solid black; }
+        body { font-family: Arial, sans-serif; text-align: center; }
+        input { margin: 5px; padding: 8px; width: 300px; }
+        button { margin: 10px; padding: 10px; }
     </style>
 </head>
 <body>
-    <h2>Fill PDF Form</h2>
-    <div id="pdf-container">
-        <canvas id="pdf-canvas"></canvas>
-    </div>
-    <button onclick="downloadPDF()">Download Filled PDF</button>
+
+    <h2>Repair Collection Form</h2>
+
+    <label>Brand:</label> <input type="text" id="brand"><br>
+    <label>Repair Center Name:</label> <input type="text" id="repairCenter"><br>
+    <label>Invoice Number:</label> <input type="text" id="invoiceNumber"><br>
+    <label>Customer Name:</label> <input type="text" id="customerName"><br>
+
+    <button onclick="fillPDF()">Download Filled PDF</button>
 
     <script>
-        const pdfUrl = "Repair Collection (1).pdf"; // Update this if needed
-        let pdfCanvas = document.getElementById("pdf-canvas");
-        let pdfContainer = document.getElementById("pdf-container");
+        async function fillPDF() {
+            const pdfUrl = "RepairCollection.pdf";  // Make sure this file exists in your repo
+            const existingPdfBytes = await fetch(pdfUrl).then(res => res.arrayBuffer());
+            const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
+            const form = pdfDoc.getForm();
 
-        pdfjsLib.getDocument(pdfUrl).promise.then(pdf => {
-            pdf.getPage(1).then(page => {
-                let scale = 1.5;
-                let viewport = page.getViewport({ scale });
-                pdfCanvas.width = viewport.width;
-                pdfCanvas.height = viewport.height;
-                
-                let ctx = pdfCanvas.getContext("2d");
-                page.render({ canvasContext: ctx, viewport });
+            // Fill fields
+            form.getTextField("brand").setText(document.getElementById("brand").value);
+            form.getTextField("repairCenter").setText(document.getElementById("repairCenter").value);
+            form.getTextField("invoiceNumber").setText(document.getElementById("invoiceNumber").value);
+            form.getTextField("customerName").setText(document.getElementById("customerName").value);
 
-                addTextInput(100, 150, 200, 30); // Example text field (X, Y, Width, Height)
-            });
-        });
-
-        function addTextInput(x, y, width, height) {
-            let input = document.createElement("input");
-            input.type = "text";
-            input.className = "text-input";
-            input.style.left = `${x}px`;
-            input.style.top = `${y}px`;
-            input.style.width = `${width}px`;
-            input.style.height = `${height}px`;
-            input.style.position = "absolute";
-            pdfContainer.appendChild(input);
-        }
-
-        function downloadPDF() {
-            html2canvas(pdfContainer).then(canvas => {
-                let imgData = canvas.toDataURL("image/png");
-                let pdf = new jspdf.jsPDF();
-                pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
-                pdf.save("filled-form.pdf");
-            });
+            const pdfBytes = await pdfDoc.save();
+            const blob = new Blob([pdfBytes], { type: "application/pdf" });
+            saveAs(blob, "Filled_Repair_Form.pdf");
         }
     </script>
+
 </body>
 </html>
